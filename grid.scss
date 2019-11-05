@@ -1,0 +1,116 @@
+$cols: 10 !default;
+$rows: 10 !default;
+$items: 100 !default;
+$minColWidth: 1fr !default;
+$maxColWidth: 1fr !default;
+$minRowHeight: 1fr !default;
+$maxRowHeight: 1fr !default;
+$index: 1 !default;
+$gridContainer: ".grid-container" !default;
+$gridItemPrefix: "i" !default;
+
+@function addOffset($amount) {
+  $string: "";
+  @if ($amount > 0) {
+    @for $i from 1 through $amount {
+      $string: $string + ". ";
+    }
+    @return $string;
+  } @else {
+    @return ();
+  }
+}
+
+@function addItems($amount) {
+  $string: "";
+  @for $i from $index to $index + $amount {
+    $string: $string + "#{$gridItemPrefix}#{$i} ";
+  }
+  $index: $index + $amount !global;
+  @return $string;
+}
+
+@function addGroup($list, $startFromOffset: true) {
+  $group: "";
+
+  @if ($startFromOffset) {
+    @for $i from 1 through length($list) {
+      @if ($i % 2 != 0) {
+        $group: $group + addOffset(nth($list, $i));
+      } @else {
+        $group: $group + addItems(nth($list, $i));
+      }
+    }
+  } @else {
+    @for $i from 1 through length($list) {
+      @if ($i % 2 != 0) {
+        $group: $group + addItems(nth($list, $i));
+      } @else {
+        $group: $group + addOffset(nth($list, $i));
+      }
+    }
+  }
+
+  @return $group;
+}
+
+@function addEmptyRow() {
+  @return addOffset($cols);
+}
+
+@function createMirrorRow($list, $middleOffset: 1, $startFromOffset: true) {
+  $row: addGroup($list, $startFromOffset);
+
+  @if ($middleOffset > 0) {
+    $row: $row + addOffset($middleOffset);
+  }
+
+  @if ($startFromOffset) {
+    @for $j from (length($list) * -1) through -1 {
+      @if ($j % 2 != 0) {
+        $row: $row + addOffset(nth($list, abs($j)));
+      } @else {
+        $row: $row + addItems(nth($list, abs($j)));
+      }
+    }
+  } @else {
+    @for $j from (length($list) * -1) through -1 {
+      @if ($j % 2 != 0) {
+        $row: $row + addItems(nth($list, abs($j)));
+      } @else {
+        $row: $row + addOffset(nth($list, abs($j)));
+      }
+    }
+  }
+  @return $row;
+}
+
+@function getGridTemplate($array) {
+  $template: ();
+  $rows: length($array) !global;
+  @if (type_of($array) == map) {
+    @each $key, $value in $array {
+      $template: append($template, $value, "space");
+    }
+  } @else {
+    @each $value in $array {
+      $template: append($template, $value, "space");
+    }
+  }
+  @return $template;
+}
+
+@mixin createGrid($map) {
+  #{$gridContainer} {
+    display: grid;
+    grid-template: getGridTemplate($map);
+    grid-template-columns: repeat($cols, minmax($minColWidth, $maxColWidth));
+    grid-template-rows: repeat($rows, minmax($minRowHeight, $maxRowHeight));
+  }
+}
+
+@for $i from 0 through $items {
+  .#{$gridItemPrefix}#{$i} {
+    grid-area: #{$gridItemPrefix}#{$i};
+  }
+}
